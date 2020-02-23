@@ -7,9 +7,6 @@ import java.util.Map;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,10 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ua.akondaur.db.GoalRepository;
 import ua.akondaur.db.SequenceGeneratorService;
+import ua.akondaur.client.ResourceNotFoundException;
 import ua.akondaur.db.Goal;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,18 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@EnableDiscoveryClient
-@SpringBootApplication
-public class ClientApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(ClientApplication.class, args);
-	}
-
-}
-
 @RestController
-@RequestMapping("/api")
 class GoalController {
 	@Autowired
 	private GoalRepository goalRepository;
@@ -53,8 +41,10 @@ class GoalController {
 	}
 
 	@GetMapping("/goals/{id}")
-	public ResponseEntity<Goal> getGoalById(@PathVariable(value = "id") long id) {
-		return ResponseEntity.ok().body(goalRepository.findById(id));
+	public ResponseEntity<Goal> getGoalById(@PathVariable(value = "id") long id) throws ResourceNotFoundException {
+		return ResponseEntity.ok().body(goalRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Goal not found for this id :: " + id)));
+
 	}
 
 	@PostMapping("/goals")
@@ -64,8 +54,10 @@ class GoalController {
 	}
 
 	@PutMapping("/goals/{id}")
-	public ResponseEntity<Goal> updateGoal(@PathVariable(value = "id") Long id, @Valid @RequestBody Goal goalDetails) {
-		Goal goal = goalRepository.findById(id);
+	public ResponseEntity<Goal> updateGoal(@PathVariable(value = "id") Long id, @Valid @RequestBody Goal goalDetails)
+			throws ResourceNotFoundException {
+		Goal goal = goalRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Goal not found for this id :: " + id));
 
 		goal.topic = goalDetails.topic;
 		goal.author = goalDetails.author;
@@ -81,8 +73,9 @@ class GoalController {
 	}
 
 	@DeleteMapping("/goals/{id}")
-	public Map<String, Boolean> deleteEmployee(@PathVariable(value = "id") Long id) {
-		Goal goal = goalRepository.findById(id);
+	public Map<String, Boolean> deleteEmployee(@PathVariable(value = "id") Long id) throws ResourceNotFoundException {
+		Goal goal = goalRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Goal not found for this id :: " + id));
 
 		goalRepository.delete(goal);
 		Map<String, Boolean> response = new HashMap<>();
